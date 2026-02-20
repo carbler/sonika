@@ -35,9 +35,12 @@ class ExecutorBot:
                 elif isinstance(item, str):
                     if item in TOOL_GROUPS:
                         # Cargar grupo por nombre (ej: "bash", "files")
-                        for ToolClass in TOOL_GROUPS[item]:
-                            # Instanciar la herramienta
-                            self.registry.register(ToolClass())
+                        for ToolClassOrInstance in TOOL_GROUPS[item]:
+                            # Si es una clase, instanciarla. Si es instancia, registrarla directamente.
+                            if isinstance(ToolClassOrInstance, type):
+                                self.registry.register(ToolClassOrInstance())
+                            else:
+                                self.registry.register(ToolClassOrInstance)
                     else:
                         logger.warning(f"Unknown tool group: {item}")
                 else:
@@ -84,12 +87,14 @@ class ExecutorBot:
             
             output_str = str(output) if output is not None else ""
             
+            risk = getattr(tool, "risk_level", getattr(tool, "risk_hint", 0))
+            
             return ExecutionResult(
                 success=True,
                 output=output_str,
                 tool_name=tool_name,
                 params=params,
-                risk_level=tool.risk_level,
+                risk_level=risk,
                 duration_ms=duration
             )
 

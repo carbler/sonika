@@ -1,0 +1,30 @@
+{prompt_a}
+
+## Goal
+{goal}
+
+## Failed Step
+{step_description}
+
+## Error
+{error}
+
+## Available Tools
+{tool_descriptions}
+
+## Retry History (anti-loop)
+{retry_history}
+
+Decide the best recovery strategy. Output ONLY a JSON object:
+{{
+  "strategy": "retry_params",
+  "tool_name": "same_or_different_tool",
+  "params": {{}},
+  "reasoning": "why this strategy"
+}}
+
+strategy options:
+- "retry_params": retry same tool with corrected parameters
+- "alt_tool": use a different existing tool to achieve the same goal
+- "synth_tool": generate a new custom tool (tool_name = new name, params = {{"description": "what it does"}})
+- "escalate": give up on this step (max retries reached or unrecoverable)

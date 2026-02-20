@@ -30,7 +30,11 @@ class ToolRegistry:
     def list_all(self) -> List[Dict[str, str]]:
         """Lista todas las herramientas disponibles con su descripción."""
         return [
-            {"name": t.name, "description": t.description, "risk_level": str(t.risk_level)}
+            {
+                "name": t.name, 
+                "description": t.description, 
+                "risk_level": str(getattr(t, "risk_level", getattr(t, "risk_hint", 0)))
+            }
             for t in self._tools.values()
         ]
 

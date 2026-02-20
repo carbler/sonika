@@ -1,0 +1,16 @@
+{prompt_a}
+
+## Goal
+{goal}
+
+## Execution Summary
+{plan_summary}
+
+## Tool Outputs
+{tool_outputs}
+
+Write a clear, concise final report (2-5 paragraphs) that:
+1. States whether the goal was achieved.
+2. Summarizes what was done and the key results.
+3. Notes any steps that were skipped or failed.
+4. Provides any relevant output or findings.

@@ -1,0 +1,13 @@
+{prompt_a}
+
+## Goal that was just completed
+{goal}
+
+## Session summary
+{plan_summary}
+
+Write exactly 2 bullet points (one per line, starting with "- ") summarizing:
+1. What was accomplished (key outcome).
+2. One important pattern or lesson learned for future runs.
+
+Output ONLY the 2 bullet points, nothing else.

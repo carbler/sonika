@@ -1,11 +1,11 @@
 [project]
-name = "executor-bot"
+name = "sonika"
 version = "0.2.1"
 description = "Autonomous tool execution layer & CLI for AI orchestrators"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-authors = [{name = "ExecutorBot Team"}]
+authors = [{name = "Sonika Team"}]
 
 dependencies = [
     "langchain>=0.3",
@@ -15,7 +15,7 @@ dependencies = [
     "typer>=0.12",
     "rich>=13.0",
     "python-dotenv>=1.0",
-    "sonika-ai-toolkit",
+    "sonika-ai-toolkit>=0.2.1",
     "langchain-google-genai",
     "langchain-aws",
 ]
@@ -24,8 +24,8 @@ dependencies = [
 dev = ["pytest", "pytest-asyncio", "ruff", "mypy"]
 
 [project.scripts]
-sonika = "executor_bot.cli:app"
+sonika = "sonika.cli:app"
 
 [tool.setuptools.packages.find]
-include = ["executor_bot*"]
+include = ["sonika*"]
 exclude = ["skills*", "tests*"]

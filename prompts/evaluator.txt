@@ -1,0 +1,22 @@
+{prompt_a}
+
+## Goal
+{goal}
+
+## Current Step
+{step_description}
+
+## Tool Output
+{tool_output}
+
+## All Steps Status
+{plan_summary}
+
+Evaluate whether this step succeeded and whether the overall goal is now complete.
+Output ONLY a JSON object:
+{{
+  "step_success": true,
+  "reason": "brief explanation",
+  "goal_complete": false,
+  "goal_complete_reason": "why goal is or isn't complete"
+}}

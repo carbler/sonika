@@ -1,0 +1,32 @@
+{prompt_a}
+
+## Domain Instructions
+{instructions}
+
+## Available Tools
+{tool_descriptions}
+
+## Memory Context
+{memory_context}
+
+## Goal
+{goal}
+
+## Additional Context
+{context}
+
+Produce a step-by-step plan as a JSON object with this exact schema:
+{{
+  "steps": [
+    {{
+      "id": 1,
+      "description": "human-readable description",
+      "tool_name": "exact_tool_name",
+      "params": {{}},
+      "risk_level": 0
+    }}
+  ]
+}}
+
+risk_level: 0=safe, 1=low-risk, 2=medium-risk, 3=high-risk.
+Output ONLY the JSON object, no explanation.
