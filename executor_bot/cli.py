@@ -45,6 +45,7 @@ def _on_step_end(step: Dict, output: str):
     if display:
         status = step.get("status", "unknown")
         # En Sonika, 'status' se actualiza a 'success'/'error' antes de llamar al callback
+        # Si output empieza con ERROR:, lo marcamos como error visualmente
         error = output.startswith("ERROR:") or "Error:" in output[:20]
         display.complete_step(output, error=error)
 
@@ -120,7 +121,7 @@ def create_orchestrator(
     
     # 3. Prompt de Sistema
     instructions = (
-        "You are OpenCode (ExecutorBot Edition). "
+        "You are Sonika CLI (ExecutorBot Edition). "
         "Use provided tools to execute precise coding and system tasks. "
         "Always reason before acting. If you modify files, verify changes."
     )

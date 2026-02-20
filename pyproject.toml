@@ -16,13 +16,14 @@ dependencies = [
     "rich>=13.0",
     "python-dotenv>=1.0",
     "sonika-ai-toolkit",
+    "langchain-google-genai",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio", "ruff", "mypy"]
 
 [project.scripts]
-opencode = "executor_bot.cli:app"
+sonika = "executor_bot.cli:app"
 
 [tool.setuptools.packages.find]
 include = ["executor_bot*"]

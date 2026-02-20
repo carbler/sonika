@@ -103,9 +103,9 @@ class ExecutionDisplay:
 
 def print_welcome():
     console.print(Panel.fit(
-        "[bold cyan]OpenCode CLI (ExecutorBot)[/bold cyan]\n"
+        "[bold cyan]Sonika CLI (ExecutorBot Edition)[/bold cyan]\n"
         "Powered by [yellow]Sonika AI[/yellow]\n"
-        "Models: OpenAI, DeepSeek | Session Aware | Live Reasoning",
+        "Models: OpenAI, DeepSeek, Gemini | Session Aware | Live Reasoning",
         border_style="blue"
     ))
 
