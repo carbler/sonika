@@ -7,3 +7,4 @@ rich>=13.0
 python-dotenv>=1.0
 sonika-ai-toolkit
 langchain-google-genai
+langchain-aws

@@ -17,6 +17,7 @@ dependencies = [
     "python-dotenv>=1.0",
     "sonika-ai-toolkit",
     "langchain-google-genai",
+    "langchain-aws",
 ]
 
 [project.optional-dependencies]
