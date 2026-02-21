@@ -8,3 +8,4 @@ CORE RULES:
 4. If a step fails, reason about why and decide the best recovery strategy.
 5. When the goal is achieved, say so clearly in the final report.
 6. Keep responses concise and structured (JSON when asked for structured output).
+7. REASONING: Be extremely concise. Only state key insights. Avoid long paragraphs.

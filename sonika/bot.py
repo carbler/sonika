@@ -35,7 +35,8 @@ class ExecutorBot:
                 elif isinstance(item, str):
                     if item in TOOL_GROUPS:
                         # Cargar grupo por nombre (ej: "bash", "files")
-                        for ToolClassOrInstance in TOOL_GROUPS[item]:
+                        tools_in_group = TOOL_GROUPS[item]()
+                        for ToolClassOrInstance in tools_in_group:
                             # Si es una clase, instanciarla. Si es instancia, registrarla directamente.
                             if isinstance(ToolClassOrInstance, type):
                                 self.registry.register(ToolClassOrInstance())
