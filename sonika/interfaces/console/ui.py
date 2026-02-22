@@ -31,17 +31,11 @@ class ExecutionDisplay:
 
 def print_welcome(model_info: str):
     console.print(Panel(
-        f"[bold cyan]Sonika CLI[/bold cyan] — Autonomous Agent
-"
-        f"🤖 [dim]Model:[/dim] [green]{model_info}[/green]
-
-"
-        f"[bold]Commands:[/bold]
-"
-        f"  [cyan]TAB[/cyan]     : Change Mode (plan / ask / auto)
-"
-        f"  [cyan]/model[/cyan]  : Change model provider:name
-"
+        f"[bold cyan]Sonika CLI[/bold cyan] — Autonomous Agent\n"
+        f"🤖 [dim]Model:[/dim] [green]{model_info}[/green]\n\n"
+        f"[bold]Commands:[/bold]\n"
+        f"  [cyan]TAB[/cyan]     : Change Mode (plan / ask / auto)\n"
+        f"  [cyan]/model[/cyan]  : Change model provider:name\n"
         f"  [cyan]/exit[/cyan]   : Quit session",
         title="[bold yellow]✨ Welcome to Sonika[/bold yellow]",
         border_style="cyan",
@@ -61,8 +55,6 @@ def ask_confirm(prompt: str = "Continue?") -> bool:
 
 def ask_secret(prompt: str) -> str:
     return console.input(f"[bold yellow]{prompt}[/bold yellow]: ", password=True)
-
-
 
 
 class ConsoleInterface(BaseInterface):
@@ -89,9 +81,7 @@ class ConsoleInterface(BaseInterface):
         """Render a chunk of thinking/reasoning."""
         if chunk:
             if not self._is_thinking:
-                console.print("
-[dim]🧠 Pensando...[/dim]", end="
-")
+                console.print("\n[dim]🧠 Pensando...[/dim]", end="\r")
                 self._is_thinking = True
             self.thought_buffer += chunk
 
@@ -118,8 +108,7 @@ class ConsoleInterface(BaseInterface):
         Handle a LangGraph interrupt (e.g. permission required).
         """
         self._flush_thoughts()
-        console.print("
-[bold yellow]⚠️  Permiso Requerido[/bold yellow]")
+        console.print("\n[bold yellow]⚠️  Permiso Requerido[/bold yellow]")
         tool_name = data.get("tool", "unknown")
         
         if "diff" in data and data["diff"]:
@@ -128,8 +117,7 @@ class ConsoleInterface(BaseInterface):
             console.print(Panel(syntax, title=f"Preview: {tool_name}", border_style="yellow"))
         else:
             params = data.get("params", {})
-            console.print(f"Tool: [cyan]{tool_name}[/cyan]
-Params: {params}")
+            console.print(f"Tool: [cyan]{tool_name}[/cyan]\nParams: {params}")
 
         return Confirm.ask("¿Permitir ejecución de esta acción?")
 
@@ -137,6 +125,5 @@ Params: {params}")
         """Render the final result/report from the LLM."""
         self._flush_thoughts()
         if result:
-            console.print("
-[bold green]Sonika:[/bold green]")
+            console.print("\n[bold green]Sonika:[/bold green]")
             console.print(Markdown(result))

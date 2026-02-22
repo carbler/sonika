@@ -8,3 +8,4 @@ python-dotenv>=1.0
 sonika-ai-toolkit>=0.3.0
 langchain-google-genai
 langchain-aws
+prompt_toolkit>=3.0.0
