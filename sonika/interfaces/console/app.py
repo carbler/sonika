@@ -91,6 +91,10 @@ class ConsoleApp:
                                     self.ui.on_error(t.get("tool_name"), t.get("output"))
                                     
                         elif node_name == "agent":
+                            # Capturar inicio de tools (heurística, el estado no da el start exacto, 
+                            # pero la interfaz lo asume si la queue de actions lo tiene)
+                            pass
+                            
                             if update.get("final_report"):
                                 final_content = update.get("final_report")
                             elif update.get("messages"):
@@ -109,6 +113,12 @@ class ConsoleApp:
                                             c = "\n".join(parts)
                                         if c:
                                             final_content = c
+                                            
+                                    # Detect tools calling
+                                    if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
+                                        for tcall in last_msg.tool_calls:
+                                            self.ui.on_tool_start(tcall.get("name", "unknown"), tcall.get("args", {}))
+
 
                 # Detectar interrupción usando el método de LangGraph state o catching payload
                 if stream_mode == "updates" and '__interrupt__' in payload:
@@ -118,12 +128,14 @@ class ConsoleApp:
                         interrupt_data = interrupts[0].value
 
         except Exception as e:
-            console.print(f"[bold red]Stream Error:[/bold red] {str(e)}")
+            # We don't crash stream errors aggressively in terminal
+            pass
             
         return final_content, interrupt_data
 
     def run_turn(self, user_msg: str) -> tuple[str, float]:
         t0 = time.time()
+        self.ui.start_turn()
         
         async def run_async():
             final_content = None
@@ -161,6 +173,8 @@ class ConsoleApp:
         nest_asyncio.apply()
         loop = asyncio.get_event_loop()
         content, duration = loop.run_until_complete(run_async())
+        
+        self.ui.end_turn()
         return content, duration
 
     def run_interactive_loop(self):
@@ -174,18 +188,23 @@ class ConsoleApp:
             self.cycle_mode()
             event.app.invalidate()
 
-        def get_bottom_toolbar():
+        def get_rprompt():
             mode = self.get_mode_name()
             color = "green" if mode == "AUTO" else "yellow" if mode == "ASK" else "red"
-            return HTML(f'Mode: <style bg="{color}" fg="black"> {mode} </style> (TAB to switch) | /help /exit')
+            return HTML(f"<style fg='{color}'>[{mode}]</style> <dim>{self.model_name}</dim>")
 
         while True:
             try:
-                prompt_text = HTML(f'\n<b><cyan>Sonika</cyan></b> <dim>{self.provider}:{self.model_name}</dim>\n> ')
-                user_input = session.prompt(prompt_text, key_bindings=bindings, bottom_toolbar=get_bottom_toolbar)
+                # Prompt estilo minimalista
+                prompt_text = HTML("<b><cyan>sonika ❯</cyan></b> ")
+                user_input = session.prompt(
+                    prompt_text, 
+                    key_bindings=bindings, 
+                    rprompt=get_rprompt
+                )
 
                 if user_input.lower() in ("/exit", "exit", "quit", "q"):
-                    console.print("[yellow]Hasta luego.[/yellow]")
+                    console.print("[dim]Goodbye.[/dim]")
                     break
 
                 if not user_input.strip():
@@ -220,11 +239,13 @@ class ConsoleApp:
 
                 # Normal turn
                 content, duration = self.run_turn(user_input)
-                self.ui.on_result(content)
+                
+                # Render result outside live box
+                print_result(content)
                 console.print(f"[dim]⏱ {duration:.2f}s[/dim]")
 
             except KeyboardInterrupt:
-                console.print("\n[yellow]Interrumpido. Escribe /exit para salir.[/yellow]")
+                console.print("\n[yellow]Interrupted. Type /exit to quit.[/yellow]")
             except Exception as e:
                 console.print(f"[red]Error in loop:[/red] {e}")
                 import traceback
