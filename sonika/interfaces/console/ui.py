@@ -1,49 +1,47 @@
 import time
 from typing import Any, Dict, Optional
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
-from rich.syntax import Syntax
-from rich.prompt import Confirm
 from rich.markdown import Markdown
+from rich.text import Text
+from rich.live import Live
+from rich.spinner import Spinner
+from rich.prompt import Confirm
+from rich.syntax import Syntax
+from rich.box import MINIMAL
 
 from sonika_ai_toolkit.interfaces.base import BaseInterface
 
 console = Console()
 
 class ExecutionDisplay:
-    """Legacy UI class. Being replaced by ConsoleInterface, kept here if used by other modules."""
+    """Legacy UI class."""
     def __init__(self):
         self.active = False
-    def start(self):
-        pass
-    def stop(self):
-        pass
-    def show_waiting(self):
-        pass
-    def clear_waiting(self):
-        pass
-    def update_thinking(self, chunk):
-        pass
-    def add_step(self, tool, params):
-        pass
-    def complete_step(self, out, error=False):
-        pass
+    def start(self): pass
+    def stop(self): pass
+    def show_waiting(self): pass
+    def clear_waiting(self): pass
+    def update_thinking(self, chunk): pass
+    def add_step(self, tool, params): pass
+    def complete_step(self, out, error=False): pass
 
 def print_welcome(model_info: str):
-    console.print(Panel.fit(
+    console.print(Panel(
         f"[bold cyan]Sonika CLI[/bold cyan] — Autonomous Agent\n"
-        f"Model: [green]{model_info}[/green]\n"
-        "Commands:\n"
-        "  [cyan]TAB[/cyan]     : Change Mode (plan / ask / auto)\n"
-        "  [cyan]/model[/cyan]  : Change model provider:name\n"
-        "  [cyan]/exit[/cyan]   : Quit session",
-        title="Welcome",
-        border_style="cyan"
+        f"🤖 [dim]Model:[/dim] [green]{model_info}[/green]\n\n"
+        f"[bold]Commands:[/bold]\n"
+        f"  [cyan]TAB[/cyan]     : Change Mode (plan / ask / auto)\n"
+        f"  [cyan]/model[/cyan]  : Change model provider:name\n"
+        f"  [cyan]/exit[/cyan]   : Quit session",
+        title="[bold yellow]✨ Welcome to Sonika[/bold yellow]",
+        border_style="cyan",
+        padding=(1, 2)
     ))
 
 def print_result(content: str):
     if content:
-        console.print("\n[bold green]Sonika:[/bold green]")
+        console.print("\n[bold cyan]sonika ❯[/bold cyan]")
         console.print(Markdown(content))
 
 def print_model_info(provider: str, model: str):
@@ -58,37 +56,154 @@ def ask_secret(prompt: str) -> str:
 
 class ConsoleInterface(BaseInterface):
     """
-    Implementación del BaseInterface para la terminal usando Rich.
+    Implementación del BaseInterface para la terminal usando Rich con motor Live 
+    (estilo Claude Code).
     """
     def __init__(self):
         self.start_times: Dict[str, float] = {}
+        self.turn_start_time = 0.0
+        
+        # State for Live render
+        self.events = []
+        self.current_thought_chunk = ""
+        self._is_thinking = False
+        self.active_tool = None
+        self.live: Optional[Live] = None
 
+    def start_turn(self):
+        """Inicia el layout dinámico de un nuevo turno."""
+        self.turn_start_time = time.time()
+        self.events = []
+        self.current_thought_chunk = ""
+        self._is_thinking = True
+        self.active_tool = None
+        self.start_times = {}
+        
+        self.live = Live(
+            get_renderable=self.render_layout,
+            refresh_per_second=10,
+            console=console,
+            transient=False  # Keep the final output visible
+        )
+        self.live.start()
+
+    def end_turn(self):
+        """Finaliza el layout dinámico."""
+        self._flush_thought_chunk()
+        self._is_thinking = False
+        if self.live:
+            self.live.update(self.render_layout(final=True))
+            self.live.stop()
+            self.live = None
+
+    def _flush_thought_chunk(self):
+        """Mueve el texto actual de pensamiento al historial de eventos."""
+        if self.current_thought_chunk.strip():
+            self.events.append({"type": "thought", "content": self.current_thought_chunk})
+            self.current_thought_chunk = ""
+
+    def render_layout(self, final=False):
+        """Genera el árbol de componentes a renderizar en este frame."""
+        elapsed = time.time() - self.turn_start_time
+        elements = []
+        
+        def render_thought(content):
+            return Panel(
+                Markdown(content),
+                box=MINIMAL,
+                border_style="dim cyan",
+                padding=(0, 2),
+                style="dim"
+            )
+
+        # 1. Renderizar el historial de este turno
+        for event in self.events:
+            if event["type"] == "thought":
+                elements.append(render_thought(event["content"]))
+            elif event["type"] == "tool":
+                name = event["name"]
+                duration = event["duration"]
+                if event["status"] == "success":
+                    elements.append(Text.from_markup(f"[bold green]✓[/bold green] [dim]{name} ({duration:.1f}s)[/dim]"))
+                else:
+                    err = event["error"]
+                    # Limit error length in inline view
+                    if len(err) > 60: err = err[:57] + "..."
+                    elements.append(Text.from_markup(f"[bold red]✗[/bold red] [dim]{name} ({duration:.1f}s): {err}[/dim]"))
+
+        # 2. Renderizar el bloque de pensamiento activo (stream)
+        if self.current_thought_chunk.strip():
+            elements.append(render_thought(self.current_thought_chunk))
+
+        # 3. Renderizar la herramienta activa
+        if self.active_tool and not final:
+            t_name, t_params = self.active_tool
+            # Try to format params safely
+            param_str = str(t_params)
+            if len(param_str) > 50:
+                param_str = param_str[:47] + "..."
+            elements.append(Spinner("dots", text=f"[bold cyan]Ejecutando {t_name}...[/bold cyan] [dim]{param_str}[/dim]"))
+
+        # 4. Renderizar el estado global de pensamiento
+        if self._is_thinking and not self.active_tool and not final:
+            elements.append(Spinner("dots", text=f"[dim]Pensando... ({elapsed:.1f}s)[/dim]", style="dim"))
+
+        # 5. Timer final al terminar
+        if final and len(elements) > 0:
+            elements.append(Text.from_markup(f"")) # Empty line separator
+
+        if not elements:
+            return Text("")
+            
+        return Group(*elements)
+
+    # BaseInterface methods
+    
     def on_thought(self, chunk: str) -> None:
-        """Render a chunk of thinking/reasoning."""
-        # Print inline with a dim color
-        # Escape brackets in chunk to avoid rich parsing errors
-        escaped = chunk.replace("[", "\\[").replace("]", "\\]")
-        console.print(f"[dim]{escaped}[/dim]", end="", highlight=False)
+        if chunk:
+            self._is_thinking = True
+            self.current_thought_chunk += chunk
 
     def on_tool_start(self, tool_name: str, params: Dict[str, Any]) -> None:
-        """Render the start of a tool execution."""
+        self._flush_thought_chunk()
         self.start_times[tool_name] = time.time()
-        console.print(f"\n[bold cyan]⚙️  Ejecutando:[/bold cyan] {tool_name} [dim]{params}[/dim]")
+        self.active_tool = (tool_name, params)
+        self._is_thinking = False
 
     def on_tool_end(self, tool_name: str, result: str) -> None:
-        """Render the successful completion of a tool."""
+        self._flush_thought_chunk()
         duration = time.time() - self.start_times.get(tool_name, time.time())
-        console.print(f"[bold green]✅ {tool_name}[/bold green] [dim]({duration:.2f}s)[/dim]")
+        self.events.append({
+            "type": "tool",
+            "name": tool_name,
+            "status": "success",
+            "duration": duration
+        })
+        self.active_tool = None
+        self._is_thinking = True
 
     def on_error(self, tool_name: str, error: str) -> None:
-        """Render an error that occurred during tool execution."""
+        self._flush_thought_chunk()
         duration = time.time() - self.start_times.get(tool_name, time.time())
-        console.print(f"[bold red]❌ {tool_name} falló:[/bold red] {error} [dim]({duration:.2f}s)[/dim]")
+        self.events.append({
+            "type": "tool",
+            "name": tool_name,
+            "status": "error",
+            "duration": duration,
+            "error": error
+        })
+        self.active_tool = None
+        self._is_thinking = True
 
     def on_interrupt(self, data: Dict[str, Any]) -> bool:
         """
-        Handle a LangGraph interrupt (e.g. permission required).
+        Pausa el layout en vivo para pedir confirmación interactiva.
         """
+        # Temporalmente detenemos la animación para mostrar el prompt de confirmación limpio
+        if self.live:
+            self.live.stop()
+            
+        self._flush_thought_chunk()
         console.print("\n[bold yellow]⚠️  Permiso Requerido[/bold yellow]")
         tool_name = data.get("tool", "unknown")
         
@@ -100,10 +215,14 @@ class ConsoleInterface(BaseInterface):
             params = data.get("params", {})
             console.print(f"Tool: [cyan]{tool_name}[/cyan]\nParams: {params}")
 
-        return Confirm.ask("¿Permitir ejecución de esta acción?")
+        approved = Confirm.ask("¿Permitir ejecución de esta acción?")
+        
+        # Reiniciamos la animación
+        if self.live:
+            self.live.start()
+            
+        return approved
 
     def on_result(self, result: str) -> None:
-        """Render the final result/report from the LLM."""
-        if result:
-            console.print("\n[bold green]Sonika:[/bold green]")
-            console.print(Markdown(result))
+        # Finaliza el bloque asíncrono si está activo
+        pass 
