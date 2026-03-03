@@ -1,6 +1,6 @@
 [project]
 name = "sonika"
-version = "0.2.2"
+version = "0.3.0"
 description = "Autonomous tool execution layer & CLI for AI orchestrators"
 readme = "README.md"
 requires-python = ">=3.11"
