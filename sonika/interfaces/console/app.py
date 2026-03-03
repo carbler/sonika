@@ -91,33 +91,32 @@ class ConsoleApp:
                                     self.ui.on_error(t.get("tool_name"), t.get("output"))
                                     
                         elif node_name == "agent":
-                            # Capturar inicio de tools (heurística, el estado no da el start exacto, 
-                            # pero la interfaz lo asume si la queue de actions lo tiene)
-                            pass
-                            
-                            if update.get("final_report"):
-                                final_content = update.get("final_report")
-                            elif update.get("messages"):
-                                msgs = update.get("messages")
-                                if msgs:
-                                    last_msg = msgs[-1]
-                                    if hasattr(last_msg, "content") and not getattr(last_msg, "tool_calls", None):
-                                        c = last_msg.content
-                                        if isinstance(c, list):
-                                            parts = []
-                                            for p in c:
-                                                if isinstance(p, str):
-                                                    parts.append(p)
-                                                elif isinstance(p, dict) and p.get("type") != "thinking":
-                                                    parts.append(str(p.get("text", "") or p.get("content", "")))
-                                            c = "\n".join(parts)
-                                        if c:
-                                            final_content = c
-                                            
-                                    # Detect tools calling
-                                    if hasattr(last_msg, "tool_calls") and last_msg.tool_calls:
-                                        for tcall in last_msg.tool_calls:
-                                            self.ui.on_tool_start(tcall.get("name", "unknown"), tcall.get("args", {}))
+                            msgs = update.get("messages", [])
+                            last_msg = msgs[-1] if msgs else None
+
+                            # Detect tool calls first so we never capture a stale
+                            # final_report when the agent is still mid-execution.
+                            has_tool_calls = bool(last_msg and getattr(last_msg, "tool_calls", None))
+
+                            if has_tool_calls:
+                                for tcall in last_msg.tool_calls:
+                                    self.ui.on_tool_start(tcall.get("name", "unknown"), tcall.get("args", {}))
+                            else:
+                                # Only accept final_report when no tools are being called.
+                                if update.get("final_report"):
+                                    final_content = update.get("final_report")
+                                elif last_msg and hasattr(last_msg, "content"):
+                                    c = last_msg.content
+                                    if isinstance(c, list):
+                                        parts = []
+                                        for p in c:
+                                            if isinstance(p, str):
+                                                parts.append(p)
+                                            elif isinstance(p, dict) and p.get("type") != "thinking":
+                                                parts.append(str(p.get("text", "") or p.get("content", "")))
+                                        c = "\n".join(parts)
+                                    if c:
+                                        final_content = c
 
 
                 # Detectar interrupción usando el método de LangGraph state o catching payload
