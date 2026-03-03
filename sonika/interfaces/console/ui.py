@@ -225,4 +225,7 @@ class ConsoleInterface(BaseInterface):
 
     def on_result(self, result: str) -> None:
         # Finaliza el bloque asíncrono si está activo
-        pass 
+        pass
+
+    def on_retry(self, attempt: int, wait_s: float, reason: str = "rate_limit") -> None:
+        console.print(f"[dim]↻ Rate limit — reintentando ({attempt}º intento, espera {wait_s}s)[/dim]")

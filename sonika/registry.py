@@ -1,5 +1,5 @@
 from typing import List, Optional, Dict, Type
-from .tools.base import BaseTool
+from langchain_core.tools import BaseTool
 import logging
 
 logger = logging.getLogger(__name__)

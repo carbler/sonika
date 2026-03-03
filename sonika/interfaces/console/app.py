@@ -20,7 +20,7 @@ from .ui import (
 class ConsoleApp:
     def __init__(self):
         self.provider = "gemini"
-        self.model_name = "gemini-3-flash-preview"
+        self.model_name = "gemini-2.0-flash"
         self.session = "default"
         self.bot = None
         self.ui = ConsoleInterface()
@@ -97,6 +97,11 @@ class ConsoleApp:
                                     self.ui.on_error(t.get("tool_name"), t.get("output"))
 
                         elif node_name == "agent":
+                            # Dispatch retry status events before anything else
+                            for ev in update.get("status_events", []):
+                                if ev.get("type") == "retrying":
+                                    self.ui.on_retry(ev["attempt"], ev["wait_s"])
+
                             msgs = update.get("messages", [])
                             last_msg = msgs[-1] if msgs else None
 

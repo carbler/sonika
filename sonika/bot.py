@@ -6,7 +6,7 @@ from datetime import datetime
 
 from .result import ExecutionResult
 from .registry import ToolRegistry
-from .tools.base import BaseTool
+from langchain_core.tools import BaseTool
 from .tools import TOOL_GROUPS
 
 logger = logging.getLogger(__name__)

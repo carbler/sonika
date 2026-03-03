@@ -1,6 +1,7 @@
 def _get_core_tools():
     from sonika_ai_toolkit.tools.core import (
         RunBashTool,
+        BashSafeTool,
         ReadFileTool,
         WriteFileTool,
         ListDirTool,
@@ -8,9 +9,18 @@ def _get_core_tools():
         FindFileTool,
         CallApiTool,
         SearchWebTool,
+        RunPythonTool,
+        FetchWebPageTool,
+        GetDateTimeTool,
+        EmailSMTPTool,
+        SQLiteTool,
+        PostgreSQLTool,
+        MySQLTool,
+        RedisTool,
     )
     return [
         RunBashTool,
+        BashSafeTool,
         ReadFileTool,
         WriteFileTool,
         ListDirTool,
@@ -18,6 +28,14 @@ def _get_core_tools():
         FindFileTool,
         CallApiTool,
         SearchWebTool,
+        RunPythonTool,
+        FetchWebPageTool,
+        GetDateTimeTool,
+        EmailSMTPTool,
+        SQLiteTool,
+        PostgreSQLTool,
+        MySQLTool,
+        RedisTool,
     ]
 
 def _get_integrations_tools():

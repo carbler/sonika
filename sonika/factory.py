@@ -92,7 +92,7 @@ def create_orchestrator(
     model = get_model(provider, model_name)
 
     # Use sonika's own tools plus the toolkit core groups
-    executor = ExecutorBot(tools=["http", "integrations", "core"], sandbox=True)
+    executor = ExecutorBot(tools=["core", "integrations"], sandbox=True)
     raw_tools = executor.registry.get_tools()
 
     # The new LangGraph Orchestrator natively supports Interrupts and risk levels,

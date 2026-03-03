@@ -1,8 +1,12 @@
+import logging
 import typer
 import sys
 import asyncio as _asyncio
 from typing import Optional
 from dotenv import load_dotenv
+
+# Suppress noisy retry warnings from langchain_google_genai (e.g. 429 rate limit retries)
+logging.getLogger("langchain_google_genai").setLevel(logging.ERROR)
 
 from .interfaces.console.app import ConsoleApp
 
@@ -26,8 +30,8 @@ load_dotenv()
 def start(
     prompt:  Optional[str] = typer.Argument(None, help="Prompt inicial"),
     model:   str = typer.Option(
-        "gemini:gemini-3-flash-preview",
-        help="Modelo a usar (provider:nombre)  ej: gemini:gemini-3-flash-preview",
+        "gemini:gemini-2.0-flash",
+        help="Modelo a usar (provider:nombre)  ej: gemini:gemini-2.0-flash",
     ),
     risk:    int = typer.Option(2, help="Umbral de riesgo (0=Seguro, 1=Efectos, 2=Destructivo)"),
     session: str = typer.Option("default", help="ID de sesión para persistir contexto"),

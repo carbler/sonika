@@ -28,14 +28,14 @@ sonika start --model deepseek:deepseek-reasoner
 
 ## Comandos en sesión
 
-| Comando | Descripción |
-|---------|-------------|
-| `/model` | Ver modelo actual |
+| Comando                        | Descripción                     |
+| ------------------------------ | ------------------------------- |
+| `/model`                       | Ver modelo actual               |
 | `/model gemini:gemini-2.5-pro` | Cambiar de modelo sin reiniciar |
-| `/modelos` | Listar modelos disponibles |
-| `/sesion` | Ver sesión activa |
-| `/help` | Ver todos los comandos |
-| `/exit` | Salir |
+| `/modelos`                     | Listar modelos disponibles      |
+| `/sesion`                      | Ver sesión activa               |
+| `/help`                        | Ver todos los comandos          |
+| `/exit`                        | Salir                           |
 
 ## Razonamiento en tiempo real
 
