@@ -26,6 +26,12 @@ dev = ["pytest", "pytest-asyncio", "ruff", "mypy"]
 [project.scripts]
 sonika = "sonika.cli:app"
 
+[tool.pytest.ini_options]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
+
 [tool.setuptools.packages.find]
 include = ["sonika*"]
 exclude = ["skills*", "tests*"]
