@@ -67,18 +67,24 @@ class ConsoleApp:
         """Consume el generador de astream_events y actualiza la UI."""
         interrupt_data = None
         final_content = None
-        
+        last_text_buffer = ""
+
         try:
             async for stream_mode, payload in stream_gen:
                 if stream_mode == "messages":
                     chunk, metadata = payload
                     if isinstance(chunk, AIMessageChunk):
-                        # Extract thinking
+                        # Extract thinking and accumulate plain text as fallback
                         if isinstance(chunk.content, list):
                             for part in chunk.content:
-                                if isinstance(part, dict) and part.get("type") == "thinking":
-                                    self.ui.on_thought(part.get("thinking", ""))
-                        
+                                if isinstance(part, dict):
+                                    if part.get("type") == "thinking":
+                                        self.ui.on_thought(part.get("thinking", ""))
+                                    else:
+                                        last_text_buffer += str(part.get("text", "") or part.get("content", ""))
+                        elif isinstance(chunk.content, str):
+                            last_text_buffer += chunk.content
+
                 elif stream_mode == "updates":
                     # Mapeo de eventos
                     for node_name, update in payload.items():
@@ -89,7 +95,7 @@ class ConsoleApp:
                                     self.ui.on_tool_end(t.get("tool_name"), t.get("output"))
                                 elif t.get("status") == "error":
                                     self.ui.on_error(t.get("tool_name"), t.get("output"))
-                                    
+
                         elif node_name == "agent":
                             msgs = update.get("messages", [])
                             last_msg = msgs[-1] if msgs else None
@@ -101,6 +107,8 @@ class ConsoleApp:
                             if has_tool_calls:
                                 for tcall in last_msg.tool_calls:
                                     self.ui.on_tool_start(tcall.get("name", "unknown"), tcall.get("args", {}))
+                                # Reset buffer — agent is still working
+                                last_text_buffer = ""
                             else:
                                 # Only accept final_report when no tools are being called.
                                 if update.get("final_report"):
@@ -129,7 +137,12 @@ class ConsoleApp:
         except Exception as e:
             # We don't crash stream errors aggressively in terminal
             pass
-            
+
+        # Fallback: use accumulated messages-stream text when updates stream
+        # didn't produce a final_report (e.g. simple conversational turns).
+        if final_content is None and last_text_buffer.strip():
+            final_content = last_text_buffer.strip()
+
         return final_content, interrupt_data
 
     def run_turn(self, user_msg: str) -> tuple[str, float]:
@@ -243,8 +256,9 @@ class ConsoleApp:
                 print_result(content)
                 console.print(f"[dim]⏱ {duration:.2f}s[/dim]")
 
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Interrupted. Type /exit to quit.[/yellow]")
+            except (KeyboardInterrupt, EOFError):
+                console.print("\n[dim]Goodbye.[/dim]")
+                break
             except Exception as e:
                 console.print(f"[red]Error in loop:[/red] {e}")
                 import traceback
