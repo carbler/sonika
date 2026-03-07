@@ -42,9 +42,15 @@ def _get_integrations_tools():
     from sonika_ai_toolkit.tools.integrations import EmailTool, SaveContacto
     return [EmailTool, SaveContacto]
 
+def _get_scheduler_tools():
+    from sonika.tools.cron import CronTool
+    return [CronTool]
+
+
 TOOL_GROUPS = {
     "core": _get_core_tools,
     "integrations": _get_integrations_tools,
+    "scheduler": _get_scheduler_tools,
 }
 
 __all__ = ["TOOL_GROUPS"]

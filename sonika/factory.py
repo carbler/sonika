@@ -14,7 +14,10 @@ from .interfaces.console.ui import console, ask_secret, ask_confirm
 def load_prompts(prompts_dir: Optional[str] = None) -> "OrchestratorPrompts":
     from sonika_ai_toolkit.agents.orchestrator.prompts import OrchestratorPrompts
     if prompts_dir is None:
-        prompts_dir = os.path.join(os.path.dirname(__file__), "prompts")
+        # Try sonika/prompts/ first, then fall back to project-root prompts/
+        pkg_prompts = os.path.join(os.path.dirname(__file__), "prompts")
+        root_prompts = os.path.join(os.path.dirname(__file__), "..", "prompts")
+        prompts_dir = pkg_prompts if os.path.isdir(pkg_prompts) else root_prompts
     prompts_dir = os.path.abspath(prompts_dir)
     
     prompt_files = {
@@ -92,7 +95,7 @@ def create_orchestrator(
     model = get_model(provider, model_name)
 
     # Use sonika's own tools plus the toolkit core groups
-    executor = ExecutorBot(tools=["core", "integrations"], sandbox=True)
+    executor = ExecutorBot(tools=["core", "integrations", "scheduler"], sandbox=True)
     raw_tools = executor.registry.get_tools()
 
     # The new LangGraph Orchestrator natively supports Interrupts and risk levels,
