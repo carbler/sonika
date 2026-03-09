@@ -11,23 +11,33 @@ PROVIDERS = ["openai", "google", "deepseek"]
 
 
 class Config:
-    def __init__(self):
-        SONIKA_DIR.mkdir(parents=True, exist_ok=True)
+    def __init__(self, config_dir: Path | None = None):
+        self._dir = config_dir or SONIKA_DIR
+        self._file = self._dir / "config.json"
+        self._dir.mkdir(parents=True, exist_ok=True)
         self._data: dict = {}
         self._load()
 
     def _load(self):
-        if CONFIG_FILE.exists():
+        if self._file.exists():
             try:
-                self._data = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
+                self._data = json.loads(self._file.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 self._data = {}
         else:
             self._data = {}
 
     def _save(self):
-        CONFIG_FILE.write_text(
-            json.dumps(self._data, indent=2, ensure_ascii=False), encoding="utf-8"
+        # Merge with existing file to preserve keys written by other components
+        on_disk: dict = {}
+        if self._file.exists():
+            try:
+                on_disk = json.loads(self._file.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                on_disk = {}
+        on_disk.update(self._data)
+        self._file.write_text(
+            json.dumps(on_disk, indent=2, ensure_ascii=False), encoding="utf-8"
         )
 
     # ── API Keys ──────────────────────────────────────────────────────────────

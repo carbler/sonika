@@ -53,4 +53,10 @@ TOOL_GROUPS = {
     "scheduler": _get_scheduler_tools,
 }
 
-__all__ = ["TOOL_GROUPS"]
+
+def register_tool_group(name: str, loader):
+    """Register a custom tool group loader (callable returning list of tool classes)."""
+    TOOL_GROUPS[name] = loader
+
+
+__all__ = ["TOOL_GROUPS", "register_tool_group"]

@@ -5,7 +5,7 @@ Welcome to the `sonika` repository. This file (`AGENTS.md`) serves as the defini
 ## 📌 Project Overview
 **Sonika** is an autonomous tool execution layer and CLI for AI orchestrators (built primarily with `langchain`, `typer`, and `sonika-ai-toolkit`).
 * **Python Version:** 3.11+
-* **Core Libraries:** `langchain`, `langchain-core`, `pydantic>=2.0`, `typer`, `rich`, `pytest-asyncio`.
+* **Core Libraries:** `langchain`, `langchain-core`, `pydantic>=2.0`, `typer`, `rich`, `prompt_toolkit`, `pytest-asyncio`.
 
 ---
 
@@ -37,8 +37,8 @@ The codebase relies on `ruff` for fast linting and formatting, and `mypy` for st
 
 ### **Running the CLI**
 To test CLI features manually:
-* `sonika --help`
-* `sonika start "prompt text" --model "gemini:gemini-3-flash-preview"`
+* `sonika` — launches the CLI
+* `sonika "prompt text"` — runs a prompt then enters interactive loop
 * Or via module execution: `python -m sonika.cli`
 
 ---
@@ -48,7 +48,7 @@ To test CLI features manually:
 ### **1. Language and Naming**
 * **Code Language:** Source code, variables, classes, and internal logic should generally be in **English**.
 * **User-Facing Text:** Docstrings describing class usage, CLI `help=""` arguments, and console outputs (`rich` prints) are primarily written in **Spanish**. Ensure you follow this mixed-language convention unless explicitly asked to do otherwise.
-* **Naming:** 
+* **Naming:**
   * `snake_case` for variables, functions, and module names (`load_prompts`, `executor_bot`).
   * `PascalCase` for classes, Pydantic models, and Dataclasses (`ExecutorBot`, `ExecutionResult`).
   * `UPPER_SNAKE_CASE` for global constants.
@@ -57,7 +57,7 @@ To test CLI features manually:
 ### **2. Types & Data Structures**
 * **Strict Typing:** All function signatures and class methods **must** include type hints. Return types must also be declared (e.g., `def run() -> None:`).
 * Use `Optional`, `List`, `Dict`, `Any` from the `typing` module, or built-in generics natively supported by Python 3.11+.
-* **Data Structures:** 
+* **Data Structures:**
   * Use `dataclasses.dataclass` for lightweight internal return structures (like `ExecutionResult`).
   * Use Pydantic `BaseModel` when defining schemas for LLMs or strict external validation.
 
@@ -72,7 +72,7 @@ Organize imports logically:
 * **Exceptions:** Do not use bare `except:` or catch generic `Exception` unless strictly necessary for top-level logging boundaries. Catch specific exceptions.
 * **Results:** Prefer returning structured result objects (like `ExecutionResult` which encapsulates success/failure without throwing exceptions across boundaries).
   * Example: `return ExecutionResult(success=False, output="", error=str(e))`
-* **Asyncio:** The CLI relies on `asyncio`. Use `async def` and `await` for I/O operations (network, file system, LLM calls). 
+* **Asyncio:** The CLI relies on `asyncio`. Use `async def` and `await` for I/O operations (network, file system, LLM calls).
 * Notice the persistent event loop pattern in `cli.py` to prevent event loop closures across sequential asynchronous Typer command executions. Maintain this pattern when touching CLI entry points.
 
 ---
@@ -80,7 +80,12 @@ Organize imports logically:
 ## 🔧 Architecture & Creating New Tools (`sonika/tools/`)
 
 ### **Core Components**
-* **`cli.py`**: The Typer CLI application entry point. Handles arguments and asyncio setup.
+* **`cli/__init__.py`**: Entry point. Launches `SonikaCLI` via `asyncio.run()`.
+* **`cli/app.py`**: `SonikaCLI` class — renderer-agnostic main loop. Handles commands, streaming, session management.
+* **`cli/renderers/__init__.py`**: `BaseRenderer` ABC — defines the full UI contract (~20 abstract methods).
+* **`cli/renderers/claude_style.py`**: Claude Code-style renderer using Rich (output) + prompt_toolkit (input). No alternate screen.
+* **`cli/config.py`**: `Config` class — stores API keys, active model, and other preferences in `~/.sonika/config.json`. Merges with existing file on save.
+* **`config_schema.py`**: `SonikaAppConfig` dataclass for extensibility (branding, tools, prompts).
 * **`factory.py`**: Dependency injection and component wiring.
 * **`bot.py`**: `ExecutorBot` class, the main execution layer consuming the Orchestrator.
 * **`registry.py`**: `ToolRegistry` for managing available LangChain tools.
@@ -89,7 +94,7 @@ Organize imports logically:
 ### **How to Create a New Tool**
 When creating a new tool for the AI execution layer:
 1. **Inheritance:** Your tool must inherit from `sonika.tools.base.BaseTool` (which extends LangChain's `BaseTool`).
-2. **Implementation:** 
+2. **Implementation:**
    * Implement the synchronous `_run(self, *args, **kwargs) -> Any` method.
    * Optionally implement the asynchronous `_arun(self, *args, **kwargs) -> Any` method if the tool performs I/O operations.
 3. **Risk Levels:** Define the `risk_level` attribute:
@@ -103,6 +108,6 @@ When creating a new tool for the AI execution layer:
 ## 🤖 General Agent Instructions (Cursor, Copilot, Cline, etc.)
 
 * **Understand Before Modifying:** Do not assume the existence of a framework or library that is not in `pyproject.toml` or `requirements.txt`. Always verify imports.
-* **Respect the Architecture:** Do not rewrite large chunks of the system blindly. Conform to the established `langchain` + `sonika-ai-toolkit` wrapper patterns. 
+* **Respect the Architecture:** Do not rewrite large chunks of the system blindly. Conform to the established `langchain` + `sonika-ai-toolkit` wrapper patterns.
 * **Self-Verification:** If asked to fix a bug, locate the relevant file, construct a plan, write/update the failing test *first*, apply the fix, run the test (using `pytest`), and ensure it passes before finalizing the task.
 * **Minimal Edits:** Focus exclusively on the files and lines necessary to complete the user's objective. Do not "clean up" unrelated files during a targeted fix unless specifically asked.

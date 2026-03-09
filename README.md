@@ -11,14 +11,28 @@ pip install -e .
 ## Uso
 
 ```bash
-# Lanzar la TUI (interfaz principal)
+# Lanzar la CLI
 sonika
 
 # Pasar un prompt inicial directamente
 sonika "lista los archivos del directorio actual"
 ```
 
-## TUI — Comandos disponibles
+## Interfaz
+
+Interfaz estilo Claude Code usando Rich + prompt_toolkit. Terminal normal sin pantalla alternativa — scroll nativo, copy/paste nativo.
+
+- Prompt con `❯` y badge de modo
+- Respuestas renderizadas como Markdown
+- Tools con estado (▸ pendiente, ✓ éxito, ✗ error)
+- Línea de estado en vivo durante streaming (fase, tiempo, tokens, modelo)
+- Thinking visible en panel colapsado al finalizar
+- Stats del último response en el toolbar del input
+- Pickers interactivos con flechas ↑↓
+- Aprobación con navegación ← → entre Sí/No
+- Banner de bienvenida con mascota ASCII
+
+## Comandos disponibles
 
 | Comando                        | Descripción                          |
 | ------------------------------ | ------------------------------------ |
@@ -26,9 +40,10 @@ sonika "lista los archivos del directorio actual"
 | `/session`                     | Abrir selector de sesiones anteriores|
 | `/new` o `/n`                  | Crear nueva sesión                   |
 | `/key <proveedor> <clave>`     | Configurar API key (ej. `/key google AIza...`) |
+| `/mode`                        | Cambiar modo (ask/auto/plan)         |
 | `/help`                        | Ver todos los comandos               |
-| `ctrl+n`                       | Nueva sesión                         |
-| `ctrl+q`                       | Salir                                |
+| `/exit`                        | Salir                                |
+| `Tab`                          | Cambiar modo                         |
 
 ## Modelos soportados
 
@@ -85,11 +100,25 @@ sonika "lista los archivos del directorio actual"
 "genera un launchd plist para ejecutar /scripts/sync.sh cada hora en macOS"
 ```
 
+## Arquitectura
+
+```
+sonika/cli/
+  __init__.py              # Entry point
+  app.py                   # SonikaCLI — loop principal, renderer-agnostic
+  config.py                # Config — API keys, modelo activo
+  models_catalog.py        # Catálogo de modelos con precios
+  session_manager.py       # Persistencia de sesiones
+  renderers/
+    __init__.py            # BaseRenderer ABC
+    claude_style.py        # Renderer Claude Code-style (Rich + prompt_toolkit)
+```
+
 ## Almacenamiento persistente
 
 ```
 ~/.sonika/
-├── config.json           # API keys y proveedor/modelo activo
+├── config.json           # API keys, proveedor/modelo activo
 ├── sessions/
 │   └── {id}.json         # Historial de chat, tokens y costo estimado
 └── memory/
@@ -110,9 +139,28 @@ sonika "lista los archivos del directorio actual"
 }
 ```
 
+## Extensibilidad (SonikaAppConfig)
+
+```python
+from sonika.config_schema import SonikaAppConfig
+
+config = SonikaAppConfig(
+    app_name="MiApp",
+    app_title="MI APP",
+    system_instructions="...",
+    extra_commands={"ping": handler},
+    extra_tool_groups={"custom": loader},
+    extra_tools=[mi_tool],
+)
+```
+
 ## Razonamiento en tiempo real
 
-Los modelos con `2.5` o `pro` en el nombre muestran el proceso de pensamiento en tiempo real (color tenue). La TUI muestra los primeros 300 caracteres del reasoning con el prefijo `💭`.
+Los modelos con `2.5` o `pro` en el nombre muestran el proceso de pensamiento en tiempo real, visible como un panel colapsado con las primeras y últimas líneas del razonamiento.
+
+## Licencia
+
+MIT — ver [LICENSE](LICENSE).
 
 ## Contributor
 

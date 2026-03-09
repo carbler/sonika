@@ -220,7 +220,7 @@ class ConsoleApp:
                     rprompt=get_rprompt
                 )
 
-                if user_input.lower() in ("/exit", "exit", "quit", "q"):
+                if user_input.strip().lower() in ("/exit", "exit", "quit", "q"):
                     console.print("[dim]Goodbye.[/dim]")
                     break
 

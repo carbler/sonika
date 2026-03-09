@@ -1,7 +1,11 @@
 """Sonika CLI — entry point for the `sonika` command."""
 
-from sonika.cli.tui import SonikaApp
+import asyncio
 
 
 def main():
-    SonikaApp().run(mouse=False)
+    from sonika.cli.app import SonikaCLI
+    try:
+        asyncio.run(SonikaCLI().run())
+    except (KeyboardInterrupt, EOFError):
+        pass

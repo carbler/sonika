@@ -116,20 +116,10 @@ class ConsoleInterface(BaseInterface):
                 style="dim"
             )
 
-        # 1. Renderizar el historial de este turno
+        # 1. Renderizar el historial de pensamientos de este turno
         for event in self.events:
             if event["type"] == "thought":
                 elements.append(render_thought(event["content"]))
-            elif event["type"] == "tool":
-                name = event["name"]
-                duration = event["duration"]
-                if event["status"] == "success":
-                    elements.append(Text.from_markup(f"[bold green]✓[/bold green] [dim]{name} ({duration:.1f}s)[/dim]"))
-                else:
-                    err = event["error"]
-                    # Limit error length in inline view
-                    if len(err) > 60: err = err[:57] + "..."
-                    elements.append(Text.from_markup(f"[bold red]✗[/bold red] [dim]{name} ({duration:.1f}s): {err}[/dim]"))
 
         # 2. Renderizar el bloque de pensamiento activo (stream)
         if self.current_thought_chunk.strip():
@@ -164,36 +154,39 @@ class ConsoleInterface(BaseInterface):
             self._is_thinking = True
             self.current_thought_chunk += chunk
 
+    def _print_outside_live(self, text: str):
+        """Temporarily pause Live to print a persistent line."""
+        was_live = self.live is not None and self.live.is_started
+        if was_live:
+            self.live.stop()
+        console.print(text)
+        if was_live:
+            self.live.start()
+
     def on_tool_start(self, tool_name: str, params: Dict[str, Any]) -> None:
         self._flush_thought_chunk()
         self.start_times[tool_name] = time.time()
         self.active_tool = (tool_name, params)
         self._is_thinking = False
+        param_str = str(params)
+        if len(param_str) > 60:
+            param_str = param_str[:57] + "..."
+        self._print_outside_live(f"[dim]→ {tool_name} {param_str}[/dim]")
 
     def on_tool_end(self, tool_name: str, result: str) -> None:
         self._flush_thought_chunk()
         duration = time.time() - self.start_times.get(tool_name, time.time())
-        self.events.append({
-            "type": "tool",
-            "name": tool_name,
-            "status": "success",
-            "duration": duration
-        })
         self.active_tool = None
         self._is_thinking = True
+        self._print_outside_live(f"[bold green]✓[/bold green] [dim]{tool_name} ({duration:.1f}s)[/dim]")
 
     def on_error(self, tool_name: str, error: str) -> None:
         self._flush_thought_chunk()
         duration = time.time() - self.start_times.get(tool_name, time.time())
-        self.events.append({
-            "type": "tool",
-            "name": tool_name,
-            "status": "error",
-            "duration": duration,
-            "error": error
-        })
+        err = error if len(error) <= 60 else error[:57] + "..."
         self.active_tool = None
         self._is_thinking = True
+        self._print_outside_live(f"[bold red]✗[/bold red] [dim]{tool_name} ({duration:.1f}s): {err}[/dim]")
 
     def on_interrupt(self, data: Dict[str, Any]) -> bool:
         """

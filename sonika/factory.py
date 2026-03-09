@@ -89,35 +89,38 @@ def create_orchestrator(
     risk_level: int,
     session_id: str,
     prompts_dir: Optional[str] = None,
+    config: Optional["SonikaAppConfig"] = None,
 ) -> "OrchestratorBot":
     from sonika_ai_toolkit.agents.orchestrator.graph import OrchestratorBot
+    from sonika.config_schema import SonikaAppConfig
+
+    if config is None:
+        config = SonikaAppConfig()
 
     model = get_model(provider, model_name)
 
-    # Use sonika's own tools plus the toolkit core groups
-    executor = ExecutorBot(tools=["core", "integrations", "scheduler"], sandbox=True)
+    # Register extra tool groups from config
+    from sonika.tools import TOOL_GROUPS, register_tool_group
+    for name, loader in config.extra_tool_groups.items():
+        register_tool_group(name, loader)
+
+    # Use configured tool groups
+    executor = ExecutorBot(tools=config.tool_groups, sandbox=True)
     raw_tools = executor.registry.get_tools()
 
-    # The new LangGraph Orchestrator natively supports Interrupts and risk levels,
-    # so we no longer need PermissionAwareTool wrappers.
-    tools = raw_tools
+    # Append any extra standalone tools
+    tools = raw_tools + list(config.extra_tools)
 
-    instructions = (
-        "You are Sonika CLI (ExecutorBot Edition). "
-        "Use provided tools to execute precise coding and system tasks. "
-        "Always reason before acting. If you modify files, verify changes."
-    )
-
-    memory_base = os.path.expanduser("~/.sonika/memory")
+    memory_base = str(config.config_dir / "memory")
     session_path = os.path.join(memory_base, session_id)
     os.makedirs(session_path, exist_ok=True)
 
-    prompts = load_prompts(prompts_dir)
+    prompts = load_prompts(config.prompts_dir or prompts_dir)
 
     return OrchestratorBot(
         strong_model=model,
         fast_model=model,
-        instructions=instructions,
+        instructions=config.system_instructions,
         tools=tools,
         risk_threshold=risk_level,
         memory_path=session_path,

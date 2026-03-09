@@ -18,7 +18,6 @@ dependencies = [
     "langchain-google-genai>=2.1",
     "langchain-aws",
     "prompt_toolkit>=3.0",
-    "textual>=0.50.0",
 ]
 
 [project.optional-dependencies]
