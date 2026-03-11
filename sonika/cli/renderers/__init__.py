@@ -86,6 +86,10 @@ class BaseRenderer(ABC):
 
     # ── System ────────────────────────────────────────────────────────────────
 
+    def show_partial_response(self, text: str) -> None:
+        """Show intermediate progress text from the agent. Default: no-op."""
+        pass
+
     @abstractmethod
     def show_retry(self, attempt: int, wait_s: float) -> None: ...
 

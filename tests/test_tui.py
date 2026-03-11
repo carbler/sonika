@@ -98,6 +98,9 @@ class MockRenderer(BaseRenderer):
 
     # ── System ────────────────────────────────────────────────────────────────
 
+    def show_partial_response(self, text):
+        self._record("show_partial_response", text)
+
     def show_retry(self, attempt, wait_s):
         self._record("show_retry", attempt, wait_s)
 
@@ -337,6 +340,42 @@ async def test_streaming_with_tokens():
     names = r.call_names()
     assert "show_token" in names
     assert "show_final_response" in names
+
+
+@pytest.mark.asyncio
+async def test_streaming_with_partial_responses():
+    """Verify partial_responses from agent updates are dispatched to renderer."""
+    r = MockRenderer()
+    r.queue_input("do tasks")
+    cli = _make_cli(r)
+
+    mock_bot = MagicMock()
+
+    async def fake_stream(*args, **kwargs):
+        # Agent update with partial_responses (intermediate turn)
+        yield "updates", {"agent": {
+            "messages": [],
+            "status_events": [],
+            "partial_responses": ["Task 1 complete, moving to task 2..."],
+        }}
+        # Agent update with final_report (final turn)
+        yield "updates", {"agent": {
+            "messages": [],
+            "status_events": [],
+            "final_report": "All done!",
+        }}
+
+    mock_bot.astream_events = fake_stream
+
+    await cli._start_session()
+    cli._bot = mock_bot
+
+    await cli.run()
+
+    names = r.call_names()
+    assert "show_partial_response" in names
+    partial_calls = r.calls_for("show_partial_response")
+    assert partial_calls[0][0] == "Task 1 complete, moving to task 2..."
 
 
 @pytest.mark.asyncio

@@ -357,6 +357,10 @@ class SonikaCLI:
                                         tool_args_map[key] = pairs
                                         self._renderer.show_tool_start(name, pairs)
 
+                                # Partial responses (intermediate progress)
+                                for partial in update.get("partial_responses", []):
+                                    self._renderer.show_partial_response(partial)
+
                                 # Final report
                                 if update.get("final_report"):
                                     already = bool(full_final_response) or (

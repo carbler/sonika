@@ -501,6 +501,12 @@ class ClaudeStyleRenderer(BaseRenderer):
 
     # ── System ────────────────────────────────────────────────────────────────
 
+    def show_partial_response(self, text: str) -> None:
+        """Show intermediate agent progress as a dim bullet."""
+        self._clear_status()
+        self._console.print(Text(f"  ● {text}", style=DIM))
+        self._update_status()
+
     def show_retry(self, attempt: int, wait_s: float) -> None:
         self._clear_status()
         self._console.print(
